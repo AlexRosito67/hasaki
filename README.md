@@ -59,13 +59,15 @@ When your model outgrows two layers or you need INT8 quantization to fit tighter
 
 ## Quick start
 
-Download the binary for your platform:
+Download the binary for your platform from the [latest release](https://github.com/AlexRosito67/xyron/releases/latest):
 
-| Platform | Download |
+| Platform | Binary |
 |---|---|
-| Linux | [xyron_free_linux](releases/xyron_free_linux) |
-| Windows | [xyron_free_windows.exe](releases/xyron_free_windows.exe) |
-| macOS | [xyron_free_macos](releases/xyron_free_macos) |
+| Linux | `xyron_free_linux` |
+| Windows | `xyron_free_windows.exe` |
+| macOS | `xyron_free_macos` |
+
+Make the binary executable and add it to your `PATH`.
 
 ### Train an XOR classifier
 

@@ -143,8 +143,9 @@ By using Xyron Free you agree to its terms. Key conditions:
 - **Redistribution:** allowed free of charge, in unmodified form, with this license included
 - **Modification:** not permitted — Xyron Free is not open source
 
-If your project grows into a commercial product, or you need to embed Xyron-generated headers in commercial firmware, a Xyron Pro commercial license is required.  
-→ [Xyron Pro](https://xyron-pro.com) | xyron.io@protonmail.com
+If your project grows into a commercial product, or you need to embed Xyron-generated headers in commercial firmware, a Xyron Pro commercial license is required.
+
+Contact: xyron.io@protonmail.com
 
 ---
 

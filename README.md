@@ -4,11 +4,17 @@
 
 
 # Xyron
-**Neural networks for microcontrollers that were never meant to run them.**
 
-Xyron is a command-line tool that trains a neural network on your desktop and exports a single, self-contained C header file — ready to drop into any embedded project. No runtime. No framework. No TensorFlow Lite. Just pure C and a microcontroller.
+> **Neural networks for microcontrollers that were never meant to run them.**
 
-> *I ran MNIST on an ESP32-C3 — no TensorFlow, no TFLite, no ML runtime of any kind.*  
+Xyron is a command-line tool that trains a neural network on your desktop and exports a single, self-contained C header file — ready to drop into any embedded project. 
+
+**No runtime. No framework. No TensorFlow Lite. Just pure C and a microcontroller.**
+
+---
+
+### ⚡ The Proof
+> *"I ran MNIST on an ESP32-C3 — no TensorFlow, no TFLite, no ML runtime of any kind."*
 > → [Read the full writeup on dev.to](https://dev.to/alexrosito67/i-ran-mnist-on-an-esp32-c3-without-tensorflow-tflite-or-any-ml-runtime-1cjk)
 
 ---

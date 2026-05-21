@@ -1,0 +1,38 @@
+# Compiled binaries
+xyron
+xyron.exe
+*.o
+*.so
+*.a
+*.dylib
+
+# Model and training outputs (large files, generated locally)
+*.txt
+*.h
+*.csv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+*.vim
+*~
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Build artifacts
+/build/
+/dist/
+/target/
+*.out
+
+# Dependencies (if applicable)
+/node_modules/
+/venv/
+/__pycache__/
+*.egg-info/

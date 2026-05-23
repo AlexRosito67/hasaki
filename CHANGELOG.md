@@ -1,4 +1,4 @@
-# Changelog — Xyron
+# Changelog — Hasaki 刃先
 
 All notable changes to this project will be documented in this file.
 
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [3.0.2] - 2026-05-20
 
 ### Added
-- Initial public release of Xyron Free
+- Initial public release of Hasaki Free
 - Command-line tool for training neural networks and exporting to C headers
 - Cross-platform binaries: Linux, macOS, Windows
 - Support for multiple activation functions: Sigmoid, Tanh, ReLU, Leaky ReLU, Linear, Softmax
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Model inference via CLI
 - Batch validation against datasets
 - Example datasets: XOR (binary classification), 1D regression, multiclass classification
-- Xyron Pro edition with unlimited architecture, Adam optimizer, INT8/INT4 quantization, and batch processing
+- Hasaki Pro edition with unlimited architecture, Adam optimizer, INT8/INT4 quantization, and batch processing
 
 ### Features
 - **Architecture limits (Free)**: Max 2 hidden layers, 64 neurons per layer, 500 epochs

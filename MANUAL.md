@@ -1,4 +1,4 @@
-# Xyron User Manual
+# Hasaki 刃先 User Manual
 **v3.0.1 — Neural Inference Engine for Embedded Systems**
 
 ---
@@ -29,7 +29,7 @@
 
 ## 1. Overview
 
-Xyron trains a neural network on your desktop and exports a single, self-contained C header file ready to drop into any embedded project. No runtime, no framework, no TensorFlow Lite. The exported header contains the trained weights and a `predict()` function that runs on any MCU that can compile C.
+Hasaki trains a neural network on your desktop and exports a single, self-contained C header file ready to drop into any embedded project. No runtime, no framework, no TensorFlow Lite. The exported header contains the trained weights and a `predict()` function that runs on any MCU that can compile C.
 
 ```c
 #include "model.h"
@@ -47,7 +47,7 @@ No heap allocation. No dependencies. No runtime overhead.
 
 ## 2. Editions: Free vs Pro
 
-Xyron ships in two editions compiled at build time via a `#define`. The binary itself enforces limits — there is no runtime unlock.
+Hasaki ships in two editions compiled at build time via a `#define`. The binary itself enforces limits — there is no runtime unlock.
 
 | Feature | Free | Pro |
 |---|---|---|
@@ -69,14 +69,14 @@ Download the binary for your platform and place it somewhere in your `PATH`:
 
 | Platform | Binary |
 |---|---|
-| Linux | `xyron-linux` |
-| Windows | `xyron-windows.exe` |
-| macOS | `xyron-macos` |
+| Linux | `hasaki_free_linux` |
+| Windows | `hasaki_free_windows.exe` |
+| macOS | `hasaki_free_macos` |
 
 Verify the installation:
 
 ```bash
-xyron -h
+hasaki -h
 ```
 
 ---
@@ -84,7 +84,7 @@ xyron -h
 ## 4. Command structure
 
 ```
-xyron -d <dims> -act <activations> -a <action> [options]
+hasaki -d <dims> -act <activations> -a <action> [options]
 ```
 
 `-d`, `-act`, and `-a` are required for all actions except `-batch`. The order of flags does not matter.
@@ -149,7 +149,7 @@ Trains a new model from a CSV file and saves it to disk. If `-m` is provided, re
 **Optional flags:** `-e`, `-l`, `-m` (resume), `-test-file`, `--adam` (Pro)
 
 ```bash
-xyron -d 2,4,1 -act sigmoid,sigmoid -a train \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a train \
       -f examples/xor.csv -e 500 -l 0.1 -o xor.txt
 ```
 
@@ -163,7 +163,7 @@ Epoch: 250 | Train Loss: 0.11985 | Train Acc: 1.0000 | Val Loss: 0.11985 | Val A
 - **Train Acc** — fraction of training samples classified correctly (threshold 0.5 for binary outputs)
 - **Val Loss / Val Acc** — same metrics over the validation set
 
-Xyron prints progress every 50 epochs and at the final epoch.
+Hasaki prints progress every 50 epochs and at the final epoch.
 
 ---
 
@@ -174,7 +174,7 @@ Runs a single forward pass on one input vector and prints the output.
 **Required flags:** `-d`, `-act`, `-m`, `-v`
 
 ```bash
-xyron -d 2,4,1 -act sigmoid,sigmoid -a predict \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a predict \
       -m xor.txt -v "1.0,0.0"
 ```
 
@@ -195,7 +195,7 @@ Runs inference on every row of a CSV file and reports per-sample error plus aggr
 **Required flags:** `-d`, `-act`, `-f`, `-m`
 
 ```bash
-xyron -d 2,4,1 -act sigmoid,sigmoid -a validate \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a validate \
       -f examples/xor.csv -m xor.txt
 ```
 
@@ -221,7 +221,7 @@ Exports the trained model as a self-contained C header file with a `predict()` f
 **Optional flags:** `-q` (default `float`)
 
 ```bash
-xyron -d 2,4,1 -act sigmoid,sigmoid -a export \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a export \
       -m xor.txt -o xor.h -q float
 ```
 
@@ -245,7 +245,7 @@ Exports an INT8 or INT4 model and immediately evaluates its accuracy against a r
 **Optional flags:** `-q`
 
 ```bash
-xyron -d 784,128,10 -act relu,softmax -a quantize_test \
+hasaki -d 784,128,10 -act relu,softmax -a quantize_test \
       -f mnist.csv -m mnist.txt -q int8
 ```
 
@@ -283,7 +283,7 @@ One activation is required per layer transition. For a network `-d 2,4,1`, two a
 
 ## 8. CSV format
 
-Xyron expects a headerless CSV with all inputs followed by all outputs on each row.
+Hasaki expects a headerless CSV with all inputs followed by all outputs on each row.
 
 ```
 input_1,input_2,...,output_1,output_2,...
@@ -324,7 +324,7 @@ The number of inputs and outputs must match the first and last values in `-d`.
 
 ### Auto-split vs manual split
 
-By default Xyron splits the dataset 80/20 into training and validation sets. If the dataset has fewer than 10 samples, the full dataset is used for both training and validation to avoid producing a validation set of a single sample.
+By default Hasaki splits the dataset 80/20 into training and validation sets. If the dataset has fewer than 10 samples, the full dataset is used for both training and validation to avoid producing a validation set of a single sample.
 
 ```
 [Small dataset (4 samples < 10): using full data for training and validation]
@@ -335,7 +335,7 @@ By default Xyron splits the dataset 80/20 into training and validation sets. If 
 To use a separate validation file instead of the auto-split:
 
 ```bash
-xyron -d 2,4,1 -act sigmoid,sigmoid -a train \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a train \
       -f train.csv -test-file val.csv -e 500 -l 0.1 -o model.txt
 ```
 
@@ -360,11 +360,11 @@ Pass `-m` together with `-a train` to continue training from a saved model inste
 
 ```bash
 # Initial training
-xyron -d 2,4,1 -act sigmoid,sigmoid -a train \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a train \
       -f examples/xor.csv -e 500 -l 0.1 -o xor.txt
 
 # Resume for 2000 more epochs with a lower learning rate
-xyron -d 2,4,1 -act sigmoid,sigmoid -a train \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a train \
       -f examples/xor.csv -e 2000 -l 0.01 \
       -m xor.txt -o xor.txt
 ```
@@ -378,7 +378,7 @@ The `-d` and `-act` flags must match the architecture of the saved model.
 After training, export the model to a C header:
 
 ```bash
-xyron -d 2,4,1 -act sigmoid,sigmoid -a export \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a export \
       -m xor.txt -o xor.h -q float
 ```
 
@@ -394,7 +394,7 @@ predict(input, output);
 // output[0] ≈ 0.987  →  XOR result for (1, 0)
 ```
 
-The header is fully self-contained — no other Xyron files are needed on the target. It compiles with any C99-compatible toolchain and makes no dynamic memory allocations.
+The header is fully self-contained — no other Hasaki files are needed on the target. It compiles with any C99-compatible toolchain and makes no dynamic memory allocations.
 
 ---
 
@@ -404,17 +404,17 @@ Batch processing allows running multiple train/export/validate operations from a
 
 ```bash
 # Run all models in the config
-xyron -batch models.ini
+hasaki -batch models.ini
 
 # Run only one model from the config
-xyron -batch models.ini --model xor_model
+hasaki -batch models.ini --model xor_model
 ```
 
 ### Config file format
 
 ```ini
-# Optional: path to the xyron binary (default: ./xyron)
-xyron_binary = ./xyron
+# Optional: path to the hasaki binary (default: ./hasaki)
+hasaki_binary = ./hasaki
 
 [xor_model]
 dims         = 2,4,1
@@ -468,39 +468,39 @@ quantization = float
 
 ```bash
 # Train
-xyron -d 2,4,1 -act sigmoid,sigmoid -a train \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a train \
       -f examples/xor.csv -e 500 -l 0.1 -o xor.txt
 
 # Predict one sample
-xyron -d 2,4,1 -act sigmoid,sigmoid -a predict \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a predict \
       -m xor.txt -v "1.0,0.0"
 
 # Validate against the full dataset
-xyron -d 2,4,1 -act sigmoid,sigmoid -a validate \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a validate \
       -f examples/xor.csv -m xor.txt
 
 # Export to C header
-xyron -d 2,4,1 -act sigmoid,sigmoid -a export \
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a export \
       -m xor.txt -o xor.h -q float
 ```
 
 ### 1D Regression
 
 ```bash
-xyron -d 1,4,1 -act sigmoid,linear -a train \
+hasaki -d 1,4,1 -act sigmoid,linear -a train \
       -f examples/regression_1d.csv -e 500 -l 0.05 -o regression.txt
 
-xyron -d 1,4,1 -act sigmoid,linear -a validate \
+hasaki -d 1,4,1 -act sigmoid,linear -a validate \
       -f examples/regression_1d.csv -m regression.txt
 ```
 
 ### Multiclass classification
 
 ```bash
-xyron -d 3,4,2 -act sigmoid,linear -a train \
+hasaki -d 3,4,2 -act sigmoid,linear -a train \
       -f examples/softmax_toy.csv -e 500 -l 0.1 -o softmax_toy.txt
 
-xyron -d 3,4,2 -act sigmoid,linear -a validate \
+hasaki -d 3,4,2 -act sigmoid,linear -a validate \
       -f examples/softmax_toy.csv -m softmax_toy.txt
 ```
 
@@ -508,15 +508,15 @@ xyron -d 3,4,2 -act sigmoid,linear -a validate \
 
 ```bash
 # Train with Adam and ReLU/Softmax
-xyron -d 784,128,10 -act relu,softmax -a train \
+hasaki -d 784,128,10 -act relu,softmax -a train \
       -f mnist.csv -e 50000 -l 0.001 --adam -o mnist.txt
 
 # Export as INT8 for tighter memory
-xyron -d 784,128,10 -act relu,softmax -a export \
+hasaki -d 784,128,10 -act relu,softmax -a export \
       -m mnist.txt -o mnist_int8.h -q int8
 ```
 
-Full project and firmware: [https://github.com/AlexRosito67/xyron-mnist-esp32](https://github.com/AlexRosito67/xyron-mnist-esp32)
+Full project and firmware: [https://github.com/AlexRosito67/hasaki-mnist-esp32](https://github.com/AlexRosito67/hasaki-mnist-esp32)
 
 ---
 
@@ -524,8 +524,8 @@ Full project and firmware: [https://github.com/AlexRosito67/xyron-mnist-esp32](h
 
 | Error message | Cause | Fix |
 |---|---|---|
-| `Error: No arguments provided` | Xyron called with no flags | Run `xyron -h` |
-| `Error: Unknown option '-x'` | Unrecognised flag | Check flag spelling. Run `xyron -h` |
+| `Error: No arguments provided` | Hasaki called with no flags | Run `hasaki -h` |
+| `Error: Unknown option '-x'` | Unrecognised flag | Check flag spelling. Run `hasaki -h` |
 | `Error: No dimensions provided` | `-d` missing | Add `-d input,hidden,output` |
 | `Error: No training file provided` | `-f` missing for `train` | Add `-f path/to/data.csv` |
 | `Error: No output file provided` | `-o` missing | Add `-o output_file` |

@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="./logo_xyron.jpg" width="600" alt="Xyron Logo">
+  <img src="./logo_hasaki.jpg" width="600" alt="Hasaki Logo">
 </p>
 
 
-# Xyron
+# Hasaki 刃先
 
 > **Neural networks for microcontrollers that were never meant to run them.**
 
-Xyron is a command-line tool that trains a neural network on your desktop and exports a single, self-contained C header file — ready to drop into any embedded project. 
+Hasaki is a command-line tool that trains a neural network on your desktop and exports a single, self-contained C header file — ready to drop into any embedded project. 
 
 **No runtime. No framework. No TensorFlow Lite. Just pure C and a microcontroller.**
 
@@ -21,8 +21,8 @@ Xyron is a command-line tool that trains a neural network on your desktop and ex
 
 ## How it works
 
-1. Train your model on your desktop using Xyron
-2. Xyron exports a `.h` file containing the trained weights and a ready-to-call `predict()` function
+1. Train your model on your desktop using Hasaki
+2. Hasaki exports a `.h` file containing the trained weights and a ready-to-call `predict()` function
 3. Drop the header into your embedded project and call it from your main loop
 
 ```c
@@ -59,26 +59,26 @@ No heap allocation. No dependencies. No runtime overhead. If it compiles for you
 | License | Free (non-commercial) | Commercial license |
 
 The Free version is fully functional for learning, prototyping, and non-commercial projects.  
-When your model outgrows two layers or you need INT8 quantization to fit tighter memory constraints — [Xyron Pro is available here](#).
+When your model outgrows two layers or you need INT8 quantization to fit tighter memory constraints — [Hasaki Pro is available here](#).
 
 ---
 
 ## Quick start
 
-Download the binary for your platform from the [latest release](https://github.com/AlexRosito67/xyron/releases/latest):
+Download the binary for your platform from the [latest release](https://github.com/AlexRosito67/hasaki/releases/latest):
 
 | Platform | Binary |
 |---|---|
-| Linux | `xyron_free_linux` |
-| Windows | `xyron_free_windows.exe` |
-| macOS | `xyron_free_macos` |
+| Linux | `hasaki_free_linux` |
+| Windows | `hasaki_free_windows.exe` |
+| macOS | `hasaki_free_macos` |
 
 Make the binary executable and add it to your `PATH`.
 
 ### Train an XOR classifier
 
 ```bash
-xyron -d 2,4,1 \
+hasaki -d 2,4,1 \
     -act sigmoid,sigmoid \
     -e 500 \
     -l 0.1 \
@@ -110,13 +110,13 @@ Model saved to: xor_model.txt
 ### Run inference
 
 ```bash
-xyron -d 2,4,1 -act sigmoid,sigmoid -a predict -m xor_model.txt -v "1.0,0.0"
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a predict -m xor_model.txt -v "1.0,0.0"
 ```
 
 ### Export to C header
 
 ```bash
-xyron -d 2,4,1 -act sigmoid,sigmoid -a export -m xor_model.txt -o model.h -q float
+hasaki -d 2,4,1 -act sigmoid,sigmoid -a export -m xor_model.txt -o model.h -q float
 ```
 
 ---
@@ -131,27 +131,27 @@ xyron -d 2,4,1 -act sigmoid,sigmoid -a export -m xor_model.txt -o model.h -q flo
 
 ## Real-world deployment
 
-Xyron was used to train and deploy a neural network on an **ESP32-C3** — one of the smallest, cheapest MCUs available — running MNIST digit classification with no ML runtime whatsoever.
+Hasaki was used to train and deploy a neural network on an **ESP32-C3** — one of the smallest, cheapest MCUs available — running MNIST digit classification with no ML runtime whatsoever.
 
-→ [Full project and source code](https://github.com/AlexRosito67/xyron-mnist-esp32)  
+→ [Full project and source code](https://github.com/AlexRosito67/hasaki-mnist-esp32)  
 → [dev.to writeup](https://dev.to/alexrosito67/i-ran-mnist-on-an-esp32-c3-without-tensorflow-tflite-or-any-ml-runtime-1cjk)
 
 ---
 
 ## License
 
-Xyron Free is provided free of charge for personal and educational use under the [Xyron Free License](LICENSE).
+Hasaki Free is provided free of charge for personal and educational use under the [Hasaki Free License](LICENSE).
 
-By using Xyron Free you agree to its terms. Key conditions:
+By using Hasaki Free you agree to its terms. Key conditions:
 
 - **Permitted:** personal projects, academic research, education, evaluation
 - **Not permitted:** commercial use of the Software or its Output (exported C headers, model files)
 - **Redistribution:** allowed free of charge, in unmodified form, with this license included
-- **Modification:** not permitted — Xyron Free is not open source
+- **Modification:** not permitted — Hasaki Free is not open source
 
-If your project grows into a commercial product, or you need to embed Xyron-generated headers in commercial firmware, a Xyron Pro commercial license is required.
+If your project grows into a commercial product, or you need to embed Hasaki-generated headers in commercial firmware, a Hasaki Pro commercial license is required.
 
-Contact: xyron.io@protonmail.com
+Contact: hasaki.io@proton.me
 
 ---
 

@@ -1,20 +1,59 @@
 # Changelog — Hasaki 刃先
 
 All notable changes to this project will be documented in this file.
-
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
-
 ### Added
 - (Next features go here)
-
 ### Changed
 - (Breaking changes go here)
-
 ### Fixed
 - (Bug fixes go here)
+
+---
+
+## [3.2.1] - 2026-06-01
+
+### Added
+- `--patience <n>` — override early stopping patience from CLI
+- `--lr-decay <factor>` — multiply learning rate at end of each epoch; 1.0 disables
+- `--batch-size <n>` — configurable mini-batch size; 0 = auto
+- `--seed <n>` — reproducible training; fixes weight initialization and data shuffle; -1 = random
+- Cross-entropy loss integrated into evaluate() for correct multiclass metrics with softmax
+
+### Changed
+- Early stopping patience now scales with dataset size: 200 epochs for small datasets, 1000 for large
+- MIN_DELTA threshold added to early stopping — ignores insignificant improvements
+- Serial training path optimized — memory reserved upfront, fewer temporary allocations
+- OpenMP parallelism removed — overhead exceeded benefit for typical dataset sizes
+
+### Fixed
+- Free edition epoch default corrected (was 50000, now 500)
+- Batch config `--act` flag corrected in generated commands
+
+---
+
+## [3.2.0] - 2026-05-23
+
+### Added
+- Dropout regularisation (Pro)
+- L2 regularisation (Pro)
+- He/Xavier/Softmax weight initialization by activation type
+- Loss abstraction — CrossEntropy and MSE fully integrated in backprop
+- `network.save()` returns bool with error handling
+- ETA in real time during training (10-epoch sliding window)
+- `HASAKI_BUILD_VERSION` injected from release workflow
+
+### Changed
+- Complete rebrand from Xyron to Hasaki 刃先
+- Binary renamed: `hasaki_free_*` and `hasaki_pro_*`
+
+### Fixed
+- Small dataset split threshold — datasets < 10 samples use full data for train and validation
+- `--act` flag corrected in CLI help examples
+- README fabricated benchmarks removed
 
 ---
 
@@ -22,31 +61,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - Initial public release of Hasaki Free
-- Command-line tool for training neural networks and exporting to C headers
 - Cross-platform binaries: Linux, macOS, Windows
-- Support for multiple activation functions: Sigmoid, Tanh, ReLU, Leaky ReLU, Linear, Softmax
 - SGD optimizer with configurable learning rate
-- Early stopping based on validation loss (20 epochs without improvement)
-- Mini-batch gradient descent (batch size: 32)
+- Early stopping based on validation loss
+- Mini-batch gradient descent
 - Training resumption from saved models
-- Model inference via CLI
-- Batch validation against datasets
-- Example datasets: XOR (binary classification), 1D regression, multiclass classification
-- Hasaki Pro edition with unlimited architecture, Adam optimizer, INT8/INT4 quantization, and batch processing
+- Example datasets: XOR, 1D regression, multiclass classification
+- Hasaki Pro edition: unlimited architecture, Adam, INT8/INT4, batch processing
 
 ### Features
 - **Architecture limits (Free)**: Max 2 hidden layers, 64 neurons per layer, 500 epochs
 - **Quantization (Free)**: FP32 float only
-- **Commercial use**: Free edition restricted to personal/educational use
 - **Output**: Self-contained C header with `predict()` function, no dependencies, no heap allocation
-
-### Known Limitations
-- Free edition: max 2 hidden layers
-- Free edition: max 64 neurons per layer
-- Free edition: max 500 epochs
-- Free edition: SGD optimizer only (Adam available in Pro)
-- Free edition: FP32 quantization only (INT8/INT4 in Pro)
-- Free edition: no batch processing (available in Pro)
 
 ---
 

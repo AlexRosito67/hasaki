@@ -1,5 +1,5 @@
-# Hasaki 刃先 User Manual
-**v3.0.1 — Neural Inference Engine for Embedded Systems**
+# Hasaki User Manual
+**v3.2.0 — Neural Inference Engine for Embedded Systems**
 
 ---
 
@@ -57,6 +57,8 @@ Hasaki ships in two editions compiled at build time via a `#define`. The binary 
 | Optimizer | SGD | SGD + Adam (`--adam`) |
 | Quantization | Float (FP32) | Float · INT8 · INT4 |
 | Batch processing | — | ✅ (`-batch`) |
+| Dropout regularisation | — | ✅ |
+| L2 regularisation | — | ✅ |
 | Commercial use | Personal / Educational | ✅ |
 
 > The Free edition is fully functional for learning, prototyping, and non-commercial projects.
@@ -69,9 +71,9 @@ Download the binary for your platform and place it somewhere in your `PATH`:
 
 | Platform | Binary |
 |---|---|
-| Linux | `hasaki_free_linux` |
-| Windows | `hasaki_free_windows.exe` |
-| macOS | `hasaki_free_macos` |
+| Linux | `hasaki-linux` |
+| Windows | `hasaki-windows.exe` |
+| macOS | `hasaki-macos` |
 
 Verify the installation:
 
@@ -116,7 +118,13 @@ hasaki -d <dims> -act <activations> -a <action> [options]
 |---|---|---|
 | `-e` | `int` | Number of epochs. Default: `500` (Free) / `50000` (Pro) |
 | `-l` | `float` | Learning rate. Default: `0.05` |
+| `--batch-size` | `int` | Mini-batch size for training. `0` keeps auto sizing based on dataset size |
+| `--seed` | `int` | Random seed for reproducible weight initialization and data shuffling. `-1` keeps random behavior |
+| `--patience` | `int` | Early-stopping patience in epochs. `0` keeps automatic sizing |
+| `--lr-decay` | `float` | Multiply the learning rate by this factor after each epoch. `1.0` disables decay |
 | `--adam` | — | Use Adam optimizer instead of SGD **(Pro only)** |
+| `--dropout` | `float` | Dropout rate for hidden layers, e.g. `0.5`. Applied during training only **(Pro only)** |
+| `--l2` | `float` | L2 regularisation coefficient, e.g. `0.0001` **(Pro only)** |
 
 ### Prediction
 
@@ -163,7 +171,15 @@ Epoch: 250 | Train Loss: 0.11985 | Train Acc: 1.0000 | Val Loss: 0.11985 | Val A
 - **Train Acc** — fraction of training samples classified correctly (threshold 0.5 for binary outputs)
 - **Val Loss / Val Acc** — same metrics over the validation set
 
-Hasaki prints progress every 50 epochs and at the final epoch.
+Hasaki prints progress every 50 epochs and at the final epoch. The log also includes `Elapsed` and `ETA` so long runs can be tracked directly from the CLI.
+
+**Training control notes**
+
+- `--batch-size` is optional. If omitted or set to `0`, Hasaki picks a batch size automatically from the dataset size.
+- `--seed` makes both initialization and shuffling reproducible. Use `-1` to keep non-deterministic behavior.
+- `--patience` overrides early stopping directly. Use small values for fast iterations and larger values for long runs.
+- `--lr-decay` reduces the learning rate after each epoch. Use values like `0.99` or `0.95` for long runs.
+- Larger batch sizes usually improve throughput on medium and large datasets, but may change convergence behavior slightly.
 
 ---
 
@@ -171,7 +187,8 @@ Hasaki prints progress every 50 epochs and at the final epoch.
 
 Runs a single forward pass on one input vector and prints the output.
 
-**Required flags:** `-d`, `-act`, `-m`, `-v`
+**Required flags:** `-m`, `-v`  
+`-d` and `-act` are optional if the model file already contains the architecture metadata.
 
 ```bash
 hasaki -d 2,4,1 -act sigmoid,sigmoid -a predict \
@@ -181,7 +198,8 @@ hasaki -d 2,4,1 -act sigmoid,sigmoid -a predict \
 Output:
 
 ```
-In: 1.000000 0.000000  | Out: 0.987431
+Input:  1, 0
+Output: 0.987431
 ```
 
 The number of values in `-v` must exactly match the input dimension in `-d`.
@@ -192,7 +210,8 @@ The number of values in `-v` must exactly match the input dimension in `-d`.
 
 Runs inference on every row of a CSV file and reports per-sample error plus aggregate statistics.
 
-**Required flags:** `-d`, `-act`, `-f`, `-m`
+**Required flags:** `-m`, `-f`  
+`-d` and `-act` are optional if the model file already contains the architecture metadata.
 
 ```bash
 hasaki -d 2,4,1 -act sigmoid,sigmoid -a validate \
@@ -217,7 +236,8 @@ Error is the Euclidean distance between the expected and predicted output vector
 
 Exports the trained model as a self-contained C header file with a `predict()` function.
 
-**Required flags:** `-d`, `-act`, `-m`, `-o`  
+**Required flags:** `-m`, `-o`  
+`-d` and `-act` are optional if the model file already contains the architecture metadata.
 **Optional flags:** `-q` (default `float`)
 
 ```bash
@@ -239,15 +259,18 @@ The resulting header can be included directly in any C or C++ project. No other 
 
 ### 6.5 `quantize_test`
 
-Exports an INT8 or INT4 model and immediately evaluates its accuracy against a reference CSV, showing the precision loss from quantization.
+Evaluates the model in float and quantized mode against a reference CSV, then reports the quantization error and a pass/fail result.
 
-**Required flags:** `-d`, `-act`, `-f`, `-m`  
-**Optional flags:** `-q`
+**Required flags:** `-m`, `-f`  
+`-d` and `-act` are optional if the model file already contains the architecture metadata.
+**Optional flags:** `-q` (`int8` or `int4`, default `int8`)
 
 ```bash
 hasaki -d 784,128,10 -act relu,softmax -a quantize_test \
       -f mnist.csv -m mnist.txt -q int8
 ```
+
+Output includes float metrics, quantized metrics, a threshold, and `Result: PASSED` or `FAILED`.
 
 **(Pro only)**
 
@@ -341,11 +364,47 @@ hasaki -d 2,4,1 -act sigmoid,sigmoid -a train \
 
 ### Early stopping
 
-Training stops early if the validation loss does not improve for 20 consecutive epochs. The model saved to disk is the one at the epoch with the best validation loss, not the last epoch.
+Training stops early if the validation loss does not improve for a number of consecutive epochs. The patience scales with dataset size:
+
+- **Small datasets** (< 10,000 samples): patience = 200 epochs
+- **Large datasets** (≥ 10,000 samples): patience = 1,000 epochs
+
+If you expose `--patience` in a workflow or wrapper, use it as an operational knob:
+
+- `--patience 5`: fast iterations, Workbench runs, and CI checks where you want to stop as soon as the curve stalls.
+- `--patience 50` or `--patience 100`: longer training runs before export, where short plateaus are acceptable.
+
+Keep the wording precise: patience helps the model search for a better local solution, but it does not guarantee a global optimum.
+
+The model saved to disk is the one at the epoch with the best validation loss, not the last epoch. Early stopping is evaluated every epoch internally, regardless of the display interval.
 
 ```
-Early stopping at epoch 342 (no improvement for 20 epochs)
-=== Training Complete === (Final Val Loss: 0.018026)
+Early stopping at epoch 1850 (no improvement for 1000 epochs, min_delta=5e-05)
+=== Training Complete === (Final Val Loss: 0.043210)
+```
+
+### Regularisation (Pro)
+
+Two regularisation techniques are available in Pro to combat overfitting on large datasets:
+
+**Dropout** randomly deactivates neurons during training, forcing the network to learn redundant representations. Applied to hidden layers only — automatically disabled during inference (`validate`, `predict`, `export`).
+
+```bash
+--dropout 0.3    # typical range: 0.2–0.5
+```
+
+**L2 regularisation** penalises large weights during gradient updates, discouraging memorisation.
+
+```bash
+--l2 0.0001    # typical range: 0.0001–0.001
+```
+
+Both can be combined:
+
+```bash
+hasaki -d 784,64,10 -act relu,softmax -a train \
+      -f mnist_train.csv -e 50000 -l 0.001 --adam \
+      --dropout 0.3 --l2 0.0001 -o mnist.txt
 ```
 
 ### Mini-batch SGD
@@ -507,12 +566,13 @@ hasaki -d 3,4,2 -act sigmoid,linear -a validate \
 ### MNIST on ESP32-C3 (Pro)
 
 ```bash
-# Train with Adam and ReLU/Softmax
-hasaki -d 784,128,10 -act relu,softmax -a train \
-      -f mnist.csv -e 50000 -l 0.001 --adam -o mnist.txt
+# Train with Adam, dropout and L2 regularisation
+hasaki -d 784,64,10 -act relu,softmax -a train \
+      -f mnist_train.csv -e 50000 -l 0.001 --adam \
+      --dropout 0.3 --l2 0.0001 -o mnist.txt
 
 # Export as INT8 for tighter memory
-hasaki -d 784,128,10 -act relu,softmax -a export \
+hasaki -d 784,64,10 -act relu,softmax -a export \
       -m mnist.txt -o mnist_int8.h -q int8
 ```
 
@@ -541,3 +601,5 @@ Full project and firmware: [https://github.com/AlexRosito67/hasaki-mnist-esp32](
 | `Error: Adam optimizer is a Pro feature` | `--adam` used in Free | Remove `--adam` or upgrade to Pro |
 | `Error: INT8/INT4 quantization is a Pro feature` | `-q int8` or `-q int4` in Free | Use `-q float` or upgrade to Pro |
 | `Error: Batch processing is a Pro feature` | `-batch` used in Free | Upgrade to Pro |
+| `Error: Dropout is a Pro feature` | `--dropout` used in Free | Upgrade to Pro |
+| `Error: L2 regularisation is a Pro feature` | `--l2` used in Free | Upgrade to Pro |

@@ -53,8 +53,16 @@ No heap allocation. No dependencies. No runtime overhead. If it compiles for you
 |---|---|---|
 | Hidden layers | Max 2 | Unlimited |
 | Neurons per layer | Max 64 | Unlimited |
+| Epochs | Max 500 | Unlimited |
+| Optimizer | SGD | SGD + Adam |
 | Batch processing | — | ✅ |
+| Dropout regularisation | — | ✅ |
+| L2 regularisation | — | ✅ |
 | Quantization | Float (FP32) | Float (FP32) - INT8 - INT4 |
+| `--patience` | ✅ | ✅ |
+| `--lr-decay` | ✅ | ✅ |
+| `--batch-size` | ✅ | ✅ |
+| `--seed` | ✅ | ✅ |
 | Commercial use | Personal / Educational | ✅ |
 | License | Free (non-commercial) | Commercial license |
 

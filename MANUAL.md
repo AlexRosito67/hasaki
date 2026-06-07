@@ -1,5 +1,5 @@
 # Hasaki User Manual
-**v3.2.0 — Neural Inference Engine for Embedded Systems**
+**v3.2.1 — Neural Inference Engine for Embedded Systems**
 
 ---
 
@@ -20,10 +20,11 @@
 8. [CSV format](#8-csv-format)
 9. [Training behaviour](#9-training-behaviour)
 10. [Resuming training](#10-resuming-training)
-11. [Exporting to C header](#11-exporting-to-c-header)
-12. [Batch processing (Pro)](#12-batch-processing-pro)
-13. [Complete examples](#13-complete-examples)
-14. [Error reference](#14-error-reference)
+11. [Recovering the best model after a manual stop](#11-recovering-the-best-model-after-a-manual-stop)
+12. [Exporting to C header](#12-exporting-to-c-header)
+13. [Batch processing (Pro)](#13-batch-processing-pro)
+14. [Complete examples](#14-complete-examples)
+15. [Error reference](#15-error-reference)
 
 ---
 
@@ -71,9 +72,9 @@ Download the binary for your platform and place it somewhere in your `PATH`:
 
 | Platform | Binary |
 |---|---|
-| Linux | `hasaki-linux` |
-| Windows | `hasaki-windows.exe` |
-| macOS | `hasaki-macos` |
+| Linux | `hasaki_free_linux` |
+| Windows | `hasaki_free_windows.exe` |
+| macOS | `hasaki_free_macos` |
 
 Verify the installation:
 
@@ -89,7 +90,7 @@ hasaki -h
 hasaki -d <dims> -act <activations> -a <action> [options]
 ```
 
-`-d`, `-act`, and `-a` are required for all actions except `-batch`. The order of flags does not matter.
+`-d`, `-act`, and `-a` are required for all actions except `-batch`. When using `-m` with a model that already contains architecture metadata, `-d` and `-act` become optional — the model file is the source of truth. The order of flags does not matter.
 
 ---
 
@@ -191,8 +192,7 @@ Runs a single forward pass on one input vector and prints the output.
 `-d` and `-act` are optional if the model file already contains the architecture metadata.
 
 ```bash
-hasaki -d 2,4,1 -act sigmoid,sigmoid -a predict \
-      -m xor.txt -v "1.0,0.0"
+hasaki -m xor.txt -a predict -v "1.0,0.0"
 ```
 
 Output:
@@ -214,8 +214,7 @@ Runs inference on every row of a CSV file and reports per-sample error plus aggr
 `-d` and `-act` are optional if the model file already contains the architecture metadata.
 
 ```bash
-hasaki -d 2,4,1 -act sigmoid,sigmoid -a validate \
-      -f examples/xor.csv -m xor.txt
+hasaki -m xor.txt -a validate -f examples/xor.csv
 ```
 
 Output:
@@ -237,12 +236,11 @@ Error is the Euclidean distance between the expected and predicted output vector
 Exports the trained model as a self-contained C header file with a `predict()` function.
 
 **Required flags:** `-m`, `-o`  
-`-d` and `-act` are optional if the model file already contains the architecture metadata.
+`-d` and `-act` are optional if the model file already contains the architecture metadata.  
 **Optional flags:** `-q` (default `float`)
 
 ```bash
-hasaki -d 2,4,1 -act sigmoid,sigmoid -a export \
-      -m xor.txt -o xor.h -q float
+hasaki -m xor.txt -a export -o xor.h -q float
 ```
 
 The resulting header can be included directly in any C or C++ project. No other files are needed.
@@ -262,12 +260,11 @@ The resulting header can be included directly in any C or C++ project. No other 
 Evaluates the model in float and quantized mode against a reference CSV, then reports the quantization error and a pass/fail result.
 
 **Required flags:** `-m`, `-f`  
-`-d` and `-act` are optional if the model file already contains the architecture metadata.
+`-d` and `-act` are optional if the model file already contains the architecture metadata.  
 **Optional flags:** `-q` (`int8` or `int4`, default `int8`)
 
 ```bash
-hasaki -d 784,128,10 -act relu,softmax -a quantize_test \
-      -f mnist.csv -m mnist.txt -q int8
+hasaki -m mnist.txt -a quantize_test -f mnist.csv -q int8
 ```
 
 Output includes float metrics, quantized metrics, a threshold, and `Result: PASSED` or `FAILED`.
@@ -374,14 +371,16 @@ If you expose `--patience` in a workflow or wrapper, use it as an operational kn
 - `--patience 5`: fast iterations, Workbench runs, and CI checks where you want to stop as soon as the curve stalls.
 - `--patience 50` or `--patience 100`: longer training runs before export, where short plateaus are acceptable.
 
-Keep the wording precise: patience helps the model search for a better local solution, but it does not guarantee a global optimum.
-
 The model saved to disk is the one at the epoch with the best validation loss, not the last epoch. Early stopping is evaluated every epoch internally, regardless of the display interval.
 
 ```
 Early stopping at epoch 1850 (no improvement for 1000 epochs, min_delta=5e-05)
 === Training Complete === (Final Val Loss: 0.043210)
 ```
+
+### Mini-batch training
+
+Training uses mini-batch gradient descent. The batch size is controlled via `--batch-size`. If omitted or set to `0`, Hasaki selects a batch size automatically based on dataset size.
 
 ### Regularisation (Pro)
 
@@ -407,10 +406,6 @@ hasaki -d 784,64,10 -act relu,softmax -a train \
       --dropout 0.3 --l2 0.0001 -o mnist.txt
 ```
 
-### Mini-batch SGD
-
-Training always uses mini-batch gradient descent with a batch size of 32, regardless of edition. The batch size is not configurable via CLI.
-
 ---
 
 ## 10. Resuming training
@@ -432,13 +427,41 @@ The `-d` and `-act` flags must match the architecture of the saved model.
 
 ---
 
-## 11. Exporting to C header
+## 11. Recovering the best model after a manual stop
+
+During training, Hasaki continuously saves the best model found so far to a temporary file named `<output>.best_tmp`. For example, if your output is `mnist.txt`, the temporary file is `mnist.txt.best_tmp`.
+
+**When training completes normally** — whether by reaching the epoch limit or by early stopping — Hasaki saves the best model to the output file and automatically deletes the `.best_tmp` file. Nothing extra is needed.
+
+**When training is interrupted manually** — by pressing Ctrl+C, clicking Stop in Workbench, or killing the process — the `.best_tmp` file is left on disk. The output file may be incomplete or absent. To recover the best model reached before the interruption:
+
+**Linux / macOS:**
+```bash
+cp mnist.txt.best_tmp mnist.txt
+```
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item mnist.txt.best_tmp mnist.txt
+```
+
+**Windows (Command Prompt):**
+```cmd
+copy mnist.txt.best_tmp mnist.txt
+```
+
+After recovering, you can validate, export, or resume training normally using `-m mnist.txt`.
+
+> **Note:** If you stop training very early — before the first validation cycle completes — the `.best_tmp` file may not exist yet. In that case, no checkpoint is available and training must be restarted from scratch.
+
+---
+
+## 12. Exporting to C header
 
 After training, export the model to a C header:
 
 ```bash
-hasaki -d 2,4,1 -act sigmoid,sigmoid -a export \
-      -m xor.txt -o xor.h -q float
+hasaki -m xor.txt -a export -o xor.h -q float
 ```
 
 Drop `xor.h` into your embedded project and call `predict()`:
@@ -457,7 +480,7 @@ The header is fully self-contained — no other Hasaki files are needed on the t
 
 ---
 
-## 12. Batch processing (Pro)
+## 13. Batch processing (Pro)
 
 Batch processing allows running multiple train/export/validate operations from a single `.ini` configuration file. Each model is a named section.
 
@@ -521,7 +544,7 @@ quantization = float
 
 ---
 
-## 13. Complete examples
+## 14. Complete examples
 
 ### XOR — binary classification
 
@@ -531,16 +554,13 @@ hasaki -d 2,4,1 -act sigmoid,sigmoid -a train \
       -f examples/xor.csv -e 500 -l 0.1 -o xor.txt
 
 # Predict one sample
-hasaki -d 2,4,1 -act sigmoid,sigmoid -a predict \
-      -m xor.txt -v "1.0,0.0"
+hasaki -m xor.txt -a predict -v "1.0,0.0"
 
 # Validate against the full dataset
-hasaki -d 2,4,1 -act sigmoid,sigmoid -a validate \
-      -f examples/xor.csv -m xor.txt
+hasaki -m xor.txt -a validate -f examples/xor.csv
 
 # Export to C header
-hasaki -d 2,4,1 -act sigmoid,sigmoid -a export \
-      -m xor.txt -o xor.h -q float
+hasaki -m xor.txt -a export -o xor.h -q float
 ```
 
 ### 1D Regression
@@ -549,8 +569,7 @@ hasaki -d 2,4,1 -act sigmoid,sigmoid -a export \
 hasaki -d 1,4,1 -act sigmoid,linear -a train \
       -f examples/regression_1d.csv -e 500 -l 0.05 -o regression.txt
 
-hasaki -d 1,4,1 -act sigmoid,linear -a validate \
-      -f examples/regression_1d.csv -m regression.txt
+hasaki -m regression.txt -a validate -f examples/regression_1d.csv
 ```
 
 ### Multiclass classification
@@ -559,28 +578,29 @@ hasaki -d 1,4,1 -act sigmoid,linear -a validate \
 hasaki -d 3,4,2 -act sigmoid,linear -a train \
       -f examples/softmax_toy.csv -e 500 -l 0.1 -o softmax_toy.txt
 
-hasaki -d 3,4,2 -act sigmoid,linear -a validate \
-      -f examples/softmax_toy.csv -m softmax_toy.txt
+hasaki -m softmax_toy.txt -a validate -f examples/softmax_toy.csv
 ```
 
 ### MNIST on ESP32-C3 (Pro)
 
 ```bash
 # Train with Adam, dropout and L2 regularisation
-hasaki -d 784,64,10 -act relu,softmax -a train \
+hasaki -d 784,128,10 -act relu,softmax -a train \
       -f mnist_train.csv -e 50000 -l 0.001 --adam \
       --dropout 0.3 --l2 0.0001 -o mnist.txt
 
+# Test INT8 quantization before export
+hasaki -m mnist.txt -a quantize_test -f mnist_test.csv -q int8
+
 # Export as INT8 for tighter memory
-hasaki -d 784,64,10 -act relu,softmax -a export \
-      -m mnist.txt -o mnist_int8.h -q int8
+hasaki -m mnist.txt -a export -o mnist_int8.h -q int8
 ```
 
 Full project and firmware: [https://github.com/AlexRosito67/hasaki-mnist-esp32](https://github.com/AlexRosito67/hasaki-mnist-esp32)
 
 ---
 
-## 14. Error reference
+## 15. Error reference
 
 | Error message | Cause | Fix |
 |---|---|---|

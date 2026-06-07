@@ -67,7 +67,7 @@ No heap allocation. No dependencies. No runtime overhead. If it compiles for you
 | License | Free (non-commercial) | Commercial license |
 
 The Free version is fully functional for learning, prototyping, and non-commercial projects.  
-When your model outgrows two layers or you need INT8 quantization to fit tighter memory constraints — [Hasaki Pro is available here](#).
+When your model outgrows two layers or you need INT8 quantization to fit tighter memory constraints — [Hasaki Pro is available here](https://hasaki.lemonsqueezy.com/checkout/buy/dd9388d0-83ee-4005-b30d-1437045215a1).
 
 ---
 
@@ -82,6 +82,8 @@ Download the binary for your platform from the [latest release](https://github.c
 | macOS | `hasaki_free_macos` |
 
 Make the binary executable and add it to your `PATH`.
+
+> 💡 **Note on Binary Names:** The examples below use the generic `hasaki` command. If you are using the Free version, your local binary will be named `hasaki` (or `.exe` on Windows). If you have purchased a [Hasaki Pro license](https://hasaki.lemonsqueezy.com/checkout/buy/dd9388d0-83ee-4005-b30d-1437045215a1), your binary will be named `hasaki_pro_linux` or `hasaki_pro_windows.exe` and will unlock all advanced CLI flags (like Adam optimizer, batch processing, and INT8 quantization).
 
 ### Train an XOR classifier
 
@@ -121,11 +123,33 @@ Model saved to: xor_model.txt
 hasaki -d 2,4,1 -act sigmoid,sigmoid -a predict -m xor_model.txt -v "1.0,0.0"
 ```
 
+---
+
+
 ### Export to C header
 
 ```bash
 hasaki -d 2,4,1 -act sigmoid,sigmoid -a export -m xor_model.txt -o model.h -q float
 ```
+---
+
+
+
+## Recovering the best model after a manual stop
+
+If you stop training manually before it finishes, the best model is preserved in a temporary file named `<output>.best_tmp`. To recover it:
+
+**Linux / macOS:**
+```bash
+cp model.txt.best_tmp model.txt
+```
+
+**Windows:**
+```powershell
+Copy-Item model.txt.best_tmp model.txt
+```
+
+After recovering, you can validate, export, or resume training normally.
 
 ---
 
@@ -159,8 +183,14 @@ By using Hasaki Free you agree to its terms. Key conditions:
 
 If your project grows into a commercial product, or you need to embed Hasaki-generated headers in commercial firmware, a Hasaki Pro commercial license is required.
 
+[Hasaki Pro is available here](https://hasaki.lemonsqueezy.com/checkout/buy/dd9388d0-83ee-4005-b30d-1437045215a1).
+
 Contact: hasaki.io@proton.me
 
 ---
 
 *Built for the microcontrollers at the bottom of the drawer — still useful, still available, still cheap.*
+
+---
+
+

@@ -83,7 +83,7 @@ Download the binary for your platform from the [latest release](https://github.c
 
 Make the binary executable and add it to your `PATH`.
 
-> 💡 **Note on Binary Names:** The examples below use the generic `hasaki` command. If you are using the Free version, your local binary will be named `hasaki` (or `.exe` on Windows). If you have purchased a [Hasaki Pro license](https://hasaki.lemonsqueezy.com/checkout/buy/dd9388d0-83ee-4005-b30d-1437045215a1), your binary will be named `hasaki_pro_linux` or `hasaki_pro_windows.exe` and will unlock all advanced CLI flags (like Adam optimizer, batch processing, and INT8 quantization).
+> 💡 **Note on Binary Names:** The examples below use the generic `hasaki` command. If you are using the Free version, your local binary will be named `hasaki_free_xxxx` (or `.exe` on Windows). If you have purchased a [Hasaki Pro license](https://hasaki.lemonsqueezy.com/checkout/buy/dd9388d0-83ee-4005-b30d-1437045215a1), your binary will be named `hasaki_pro_linux` or `hasaki_pro_windows.exe` and will unlock all advanced CLI flags (like Adam optimizer, batch processing, and INT8 quantization).
 
 ### Train an XOR classifier
 

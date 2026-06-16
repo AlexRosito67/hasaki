@@ -183,7 +183,7 @@ By using Hasaki Free you agree to its terms. Key conditions:
 
 If your project grows into a commercial product, or you need to embed Hasaki-generated headers in commercial firmware, a Hasaki Pro commercial license is required.
 
-[Hasaki Pro is available here](https://hasaki.lemonsqueezy.com/checkout/buy/dd9388d0-83ee-4005-b30d-1437045215a1).
+[Hasaki Pro is available here](https://app.lemonsqueezy.com/share/11500831).
 
 Contact: hasaki.io@proton.me
 

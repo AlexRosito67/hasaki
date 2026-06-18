@@ -340,6 +340,184 @@ The number of inputs and outputs must match the first and last values in `-d`.
 
 ---
 
+
+## 8a. Preparing your dataset
+
+Hasaki expects a clean, numeric, headerless CSV. If your data comes from sensors, spreadsheets, or any real-world source, it will need preparation before Hasaki can use it. This section covers the most common cases.
+
+---
+
+### Requirements summary
+
+| Requirement | Detail |
+|---|---|
+| No header row | Remove column names — Hasaki infers structure from `-d` |
+| Numeric values only | Labels must be numbers, not strings |
+| Normalized features | All input values should be in the same range, typically `[0, 1]` or `[-1, 1]` |
+| One-hot outputs for multiclass | Each class becomes a separate output column |
+
+---
+
+### Step 1 — Normalize your features
+
+Raw sensor data often spans different ranges (`0–1023` for ADC, `−50–50` for accelerometer deltas, etc.). Hasaki trains better when all inputs are in the same scale.
+
+**Python script — normalize to [0, 1]:**
+
+```python
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+
+df = pd.read_csv("your_raw_data.csv")        # your raw CSV with header
+X = df.drop(columns=["label"])               # separate features from label
+y = df["label"]                              # keep labels aside
+
+scaler = MinMaxScaler()
+X_scaled = pd.DataFrame(scaler.fit_transform(X))
+
+# Rejoin and save — no header, no index
+X_scaled.to_csv("features_scaled.csv", index=False, header=False)
+```
+
+> Save the scaler if you need to normalize live sensor data at inference time:
+> ```python
+> import joblib
+> joblib.dump(scaler, "scaler.pkl")
+> ```
+
+---
+
+### Step 2 — Encode labels
+
+Hasaki does not accept string labels. Convert them to numbers before training.
+
+**For binary classification** — map to `0` and `1`:
+
+```python
+label_map = {"negative": 0, "positive": 1}
+y_encoded = y.map(label_map)
+```
+
+**For multiclass classification** — use one-hot encoding (one column per class):
+
+```python
+label_map = {
+    "none":     [1, 0, 0],
+    "approach": [0, 1, 0],
+    "away":     [0, 0, 1]
+}
+onehot = pd.DataFrame(y.map(label_map).tolist())
+```
+
+---
+
+### Step 3 — Assemble and save the final CSV
+
+Combine normalized features and encoded labels into a single file with no header:
+
+**Binary or regression:**
+
+```python
+df_out = X_scaled.copy()
+df_out["label"] = y_encoded.values
+df_out.to_csv("dataset.csv", index=False, header=False)
+```
+
+**Multiclass (one-hot):**
+
+```python
+df_out = pd.concat([X_scaled, onehot], axis=1)
+df_out.to_csv("dataset.csv", index=False, header=False)
+```
+
+---
+
+### Complete example — 3-class sensor classifier
+
+This example prepares a dataset with 9 input features and 3 output classes (`none`, `approach`, `away`) for use with Hasaki:
+
+```python
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+import joblib
+
+# Load raw data
+df = pd.read_csv("raw_sensor_data.csv")
+
+# Separate features and labels
+X = df.drop(columns=["label"])
+y = df["label"]
+
+# Normalize features
+scaler = MinMaxScaler()
+X_scaled = pd.DataFrame(scaler.fit_transform(X))
+joblib.dump(scaler, "scaler.pkl")   # save for inference normalization
+
+# One-hot encode labels
+label_map = {
+    "none":     [1, 0, 0],
+    "approach": [0, 1, 0],
+    "away":     [0, 0, 1]
+}
+onehot = pd.DataFrame(y.map(label_map).tolist())
+
+# Assemble and save
+df_out = pd.concat([X_scaled, onehot], axis=1)
+df_out.to_csv("dataset.csv", index=False, header=False)
+
+print(f"Dataset ready: {len(df_out)} samples, {X_scaled.shape[1]} inputs, 3 outputs")
+```
+
+Train with Hasaki:
+
+```bash
+hasaki -d 9,16,8,3 -act relu,relu,sigmoid -a train \
+      -f dataset.csv -e 10000 -l 0.01 --adam -o model.txt
+```
+
+---
+
+### Handling outliers
+
+Real sensor data often contains spurious readings. Filter them before normalizing:
+
+```python
+import numpy as np
+
+low  = np.percentile(X.values, 1)
+high = np.percentile(X.values, 99)
+X    = pd.DataFrame(np.clip(X.values, low, high), columns=X.columns)
+```
+
+Apply this step before `MinMaxScaler`.
+
+---
+
+### Label map in the exported header
+
+When you export the trained model, document the label mapping as a comment so the embedded firmware knows how to interpret the output:
+
+```c
+#include "model.h"
+
+// Output index mapping:
+// 0 → none
+// 1 → approach
+// 2 → away
+
+float input[9];
+float output[3];
+
+predict(input, output);
+
+// argmax
+int predicted_class = 0;
+for (int i = 1; i < 3; i++)
+    if (output[i] > output[predicted_class])
+        predicted_class = i;
+```
+---
+
 ## 9. Training behaviour
 
 ### Auto-split vs manual split

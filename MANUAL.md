@@ -518,6 +518,159 @@ for (int i = 1; i < 3; i++)
 ```
 ---
 
+## 8b. Regression tasks
+
+Hasaki supports continuous value prediction (regression) in addition to classification. The setup differs from classification in three key ways: the output layer activation, the target normalization, and how to interpret the training metrics.
+
+---
+
+### When to use regression
+
+Use regression when your target is a **continuous numeric value** rather than a class label:
+
+| Task | Type |
+|---|---|
+| Predict blood pressure from patient vitals | Regression |
+| Classify sensor reading as anomaly/normal | Classification |
+| Estimate temperature from indirect sensors | Regression |
+| Detect gesture type from accelerometer | Classification |
+
+---
+
+### Output layer activation
+
+For regression, use `sigmoid` or `linear` as the final activation:
+
+| Activation | Use when |
+|---|---|
+| `sigmoid` | Target is normalized to `[0, 1]` — recommended |
+| `linear` | Target can take any value — use with caution on MCUs |
+
+In practice, normalizing the target to `[0, 1]` and using `sigmoid` produces more stable training and is safer for embedded deployment. Both activations produce similar mean error, but `sigmoid` typically achieves lower validation loss.
+
+**Example — predict systolic blood pressure:**
+
+```bash
+hasaki -d 14,32,16,1 -act relu,relu,sigmoid -a train \
+      -f framingham_hasaki.csv -e 10000 -l 0.001 --adam \
+      -o bp_model.txt
+```
+
+---
+
+### Normalizing the target
+
+Always normalize your regression target before training. Save the normalization parameters — you will need them to convert predictions back to real-world values.
+
+```python
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+import joblib
+
+df = pd.read_csv("your_data.csv").dropna()
+
+# Separate features and target
+target = df["target_column"].values
+features = df.drop(columns=["target_column"])
+
+# Normalize features
+scaler_X = MinMaxScaler()
+X_scaled = scaler_X.fit_transform(features)
+joblib.dump(scaler_X, "scaler_X.pkl")
+
+# Normalize target to [0, 1]
+target_min = target.min()
+target_max = target.max()
+y_scaled = (target - target_min) / (target_max - target_min)
+
+print(f"Target range: [{target_min}, {target_max}]")
+
+# Save for Hasaki — no header
+import numpy as np
+data_out = np.column_stack([X_scaled, y_scaled])
+pd.DataFrame(data_out).to_csv("dataset.csv", index=False, header=False)
+```
+
+Save `target_min` and `target_max` — you need them to convert predictions back:
+
+```python
+# Decode a prediction
+predicted_normalized = 0.112834
+predicted_real = predicted_normalized * (target_max - target_min) + target_min
+# → 107.4 mmHg
+```
+
+---
+
+### Interpreting training output
+
+During regression training, Hasaki reports `Train Acc` and `Val Acc` alongside loss. **These accuracy values are not meaningful for regression** — they are computed with a 0.5 threshold designed for binary classification. Ignore them.
+
+The only metrics that matter for regression are:
+
+- **Train Loss** — MSE over normalized targets during training
+- **Val Loss** — MSE over normalized targets during validation (lower is better)
+
+To get error in real-world units after training:
+
+```
+RMSE_normalized = sqrt(Val Loss)
+RMSE_real = RMSE_normalized × (target_max - target_min)
+```
+
+**Example:** Val Loss 0.002420 on blood pressure (range 83.5–295.0 mmHg):
+```
+RMSE = sqrt(0.002420) × (295.0 - 83.5) = 0.0492 × 211.5 ≈ 10.4 mmHg
+```
+
+Use `validate` after training to get per-sample error and mean/max error statistics:
+
+```bash
+hasaki -m bp_model.txt -a validate -f framingham_hasaki.csv
+```
+
+---
+
+### Inference on the MCU
+
+The exported header works identically for regression and classification. The `predict()` function returns normalized values — convert them back to real units in your firmware:
+
+```c
+#include "bp_model.h"
+
+// Normalize inputs using the same scaler parameters from training
+float input[14] = { /* normalized feature values */ };
+float output[1];
+
+predict(input, output);
+
+// Decode: real_value = output * (max - min) + min
+float systolic_bp = output[0] * (295.0f - 83.5f) + 83.5f;
+```
+
+---
+
+### Case study: blood pressure prediction
+
+Validated on the Framingham Heart Study dataset (3658 patients, 14 features):
+
+| Setting | Value |
+|---|---|
+| Architecture | `14,32,16,1` |
+| Output activation | `sigmoid` |
+| Quantization | INT8 |
+| Header size | 8.9 kB |
+| Val Loss | 0.002420 |
+| Mean error | ~7.8 mmHg |
+| Best case error | 1.4 mmHg |
+
+For reference, clinical-grade blood pressure monitors are rated at ±3 mmHg. This model operates within clinically relevant margins on individual samples while remaining within 8.9 kB of flash memory with no runtime dependencies.
+
+> **Note:** This is a research demonstration, not a certified medical device. Do not use Hasaki-trained models for clinical diagnosis without independent validation.
+
+---
+
 ## 9. Training behaviour
 
 ### Auto-split vs manual split
